@@ -238,8 +238,8 @@ def ResNet_train(config=None):
             "saved": None  # continue from checkpoint
         }
 
-    data_loader, data_loader_test = get_dataset("CIFAR")
-    model = to_device(LeNet(config), device)
+    data_loader, data_loader_test = get_dataset("CIFAR10")
+    model = to_device(resnet20(config), device)
     history = []
     history += fit_net(model, data_loader, data_loader_test,config)
 
@@ -265,8 +265,8 @@ def Conv6_train(config=None):
             "saved": None  # continue from checkpoint
         }
 
-    data_loader, data_loader_test = get_dataset("CIFAR")
-    model = to_device(LeNet(config), device)
+    data_loader, data_loader_test = get_dataset("CIFAR10")
+    model = to_device(Conv6(config), device)
     history = []
     history += fit_net(model, data_loader, data_loader_test,config)
 

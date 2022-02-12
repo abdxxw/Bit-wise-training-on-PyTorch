@@ -168,36 +168,31 @@ class Conv6(ImageClassificationBase):
             torch.nn.ReLU(),
             Conv2dBit(64, 64, kernel_size=3, stride=1, padding=1,config=config),
             torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=2, stride=2),
-            torch.nn.Dropout(p=1 - keep_prob))
+            torch.nn.MaxPool2d(kernel_size=2, stride=2))
 
         self.layer2 = torch.nn.Sequential(
             Conv2dBit(64, 128, kernel_size=3, stride=1, padding=1, config=config),
             torch.nn.ReLU(),
             Conv2dBit(128, 128, kernel_size=3, stride=1, padding=1, config=config),
             torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=2, stride=2),
-            torch.nn.Dropout(p=1 - keep_prob))
+            torch.nn.MaxPool2d(kernel_size=2, stride=2))
 
         self.layer3 = torch.nn.Sequential(
             Conv2dBit(128, 256, kernel_size=3, stride=1, padding=1, config=config),
             torch.nn.ReLU(),
             Conv2dBit(256, 256, kernel_size=3, stride=1, padding=1, config=config),
             torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=1),
-            torch.nn.Dropout(p=1 - keep_prob))
+            torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=1))
 
         # L4 FC 4x4x128 inputs -> 625 outputs
         self.fc1 = LinearBit(5 * 5 * 256, 256, config)
         self.layer4 = torch.nn.Sequential(
             self.fc1,
-            torch.nn.ReLU(),
-            torch.nn.Dropout(p=1 - keep_prob))
+            torch.nn.ReLU())
         self.fc2 = LinearBit(256, 256, config)
         self.layer5 = torch.nn.Sequential(
             self.fc2,
-            torch.nn.ReLU(),
-            torch.nn.Dropout(p=1 - keep_prob))
+            torch.nn.ReLU())
         # L5 Final FC 625 inputs -> 10 outputs
         self.fc3 = LinearBit(256, 10, config)
 
