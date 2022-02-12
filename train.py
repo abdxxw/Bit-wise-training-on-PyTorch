@@ -179,8 +179,12 @@ def train_bit_list(config,nbits,model_type="LeNet", configs=None):
             model = to_device(resnet20(config), device)
         elif model_type == "Conv6":
             model = to_device(Conv6(config), device)
+        elif model_type == "VGG":
+            model = to_device(VGG(config), device)
+        elif model_type == "EfficientNet":
+            model = to_device(EfficientNetB0(config), device)
         else:
-            raise ValueError("only valid options are LeNet and ResNet")
+            raise ValueError("only valid options are LeNet, ResNet, Conv6, VGG, EfficientNet")
         print("Traning for {} config : ".format(trainableBits))
 
         history = []
@@ -267,6 +271,60 @@ def Conv6_train(config=None):
 
     data_loader, data_loader_test = get_dataset("CIFAR10")
     model = to_device(Conv6(config), device)
+    history = []
+    history += fit_net(model, data_loader, data_loader_test,config)
+
+
+def VGG_train(config=None):
+
+    nbits = 2
+    trainableBits = [0, 1]
+
+
+    if config == None:
+
+        config = {
+            "default": False,  # is this is true then it trains in the standard way, using default float32 weights
+            "nbBits": len(trainableBits),  # bit-depth used for weights
+            "trainable_bits": trainableBits,  # specify which bits are trainable, kind related to the previous
+            "inference_sequence": [0, nbits - 1],  # this allows us to choose which bits participate in the calculation
+            "epochs": 40,  # number of epochs
+            "max_lr": 0.006,  # , learning rate
+            "optimizer": "Adam",  # type of optimizer
+            "milestones": [25, 35],  # epochs where to decrese the learning rate by 0.1 factor
+            "path": None,  # where to save the execution
+            "saved": None  # continue from checkpoint
+        }
+
+    data_loader, data_loader_test = get_dataset("CIFAR10")
+    model = to_device(VGG(config), device)
+    history = []
+    history += fit_net(model, data_loader, data_loader_test,config)
+
+
+def EfficientNet_train(config=None):
+
+    nbits = 2
+    trainableBits = [0, 1]
+
+
+    if config == None:
+
+        config = {
+            "default": False,  # is this is true then it trains in the standard way, using default float32 weights
+            "nbBits": len(trainableBits),  # bit-depth used for weights
+            "trainable_bits": trainableBits,  # specify which bits are trainable, kind related to the previous
+            "inference_sequence": [0, nbits - 1],  # this allows us to choose which bits participate in the calculation
+            "epochs": 40,  # number of epochs
+            "max_lr": 0.006,  # , learning rate
+            "optimizer": "Adam",  # type of optimizer
+            "milestones": [25, 35],  # epochs where to decrese the learning rate by 0.1 factor
+            "path": None,  # where to save the execution
+            "saved": None  # continue from checkpoint
+        }
+
+    data_loader, data_loader_test = get_dataset("CIFAR10")
+    model = to_device(EfficientNetB0(config), device)
     history = []
     history += fit_net(model, data_loader, data_loader_test,config)
 
