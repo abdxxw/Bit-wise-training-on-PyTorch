@@ -20,8 +20,8 @@ class LinearBit(nn.Module):
         self.name = "linear"    #layer name
 
         # converts bits prob distribution to binary coefficients
-        self.tobit = to_bit
-        self.tosign = to_sign
+        self.get_bit_representation = get_bit_representation
+        self.get_sign = get_sign
 
 
         w_shape = (self.input_dim, self.output_dim) #layer weight shape
@@ -64,8 +64,8 @@ class LinearBit(nn.Module):
             return self.weight
         else:
             # at each call we calculate the weight value from the bit weights
-            self.weight = calculate_number(self.tosign, self.tobit, self.magnitude_block, self.sign_bit)
-            self.alpha = calc_scaling_factor(self.weight.clone().detach().cpu().numpy(),self.std)  # for good convergence according to paper
+            self.weight = get_float_from_bits(self.get_sign, self.get_bit_representation, self.magnitude_block, self.sign_bit)
+            self.alpha = get_factor(self.weight.clone().detach().cpu().numpy(),self.std)  # for good convergence according to paper
             self.weight *= self.alpha
             return self.weight.float().to(device)
 
@@ -75,7 +75,7 @@ class LinearBit(nn.Module):
 
     def get_nzp(self):
         # return negatif / zero / positif weight numbers
-        return get_weight_types(self.get_weight())
+        return get_sparsity(self.get_weight())
 
 
 class Conv2dBit(nn.Module):
@@ -96,8 +96,8 @@ class Conv2dBit(nn.Module):
         self.name = "conv" #layer name
 
         # converts bits prob distribution to binary coefficients
-        self.tobit = to_bit
-        self.tosign = to_sign
+        self.get_bit_representation = get_bit_representation
+        self.get_sign = get_sign
 
         k_shape = list((self.kernel_size, self.kernel_size)) + [self.input_dim, self.filters]   # kernel shape
 
@@ -142,8 +142,8 @@ class Conv2dBit(nn.Module):
             return self.kernel
         else:
             # at each call we calculate the kernel value from the bit weights
-            self.kernel = calculate_number(self.tosign, self.tobit, self.magnitude_block, self.sign_bit)
-            self.alpha = calc_scaling_factor(self.kernel.clone().detach().cpu().numpy(),self.std)  # for good convergence according to paper
+            self.kernel = get_float_from_bits(self.get_sign, self.get_bit_representation, self.magnitude_block, self.sign_bit)
+            self.alpha = get_factor(self.kernel.clone().detach().cpu().numpy(),self.std)  # for good convergence according to paper
             self.kernel *= self.alpha
             return self.kernel.float().to(device)
 
@@ -153,4 +153,4 @@ class Conv2dBit(nn.Module):
 
     def get_nzp(self):
         # return negatif / zero / positif weight numbers
-        return get_weight_types(self.get_kernel())
+        return get_sparsity(self.get_kernel())

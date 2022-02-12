@@ -41,7 +41,7 @@ def accuracy(outputs, labels):
     return torch.tensor(torch.sum(preds == labels).item() / len(preds))
 
 
-class to_bit(torch.autograd.Function):
+class get_bit_representation(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x):
         ctx.save_for_backward(x)
@@ -53,7 +53,7 @@ class to_bit(torch.autograd.Function):
         return grad_output
 
 
-class to_sign(torch.autograd.Function):
+class get_sign(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x):
         ctx.save_for_backward(x)
@@ -90,11 +90,11 @@ def init_weight_bits(shape):
     return probs
 
 
-def calc_scaling_factor(k, target):
+def get_factor(k, target):
     current_std = np.std(k)
 
     if current_std == 0:
-        print("standard deviation can' be zero")
+        print("standard deviation can't be zero")
         return 1
 
     ampl = 1
@@ -118,7 +118,7 @@ def calc_scaling_factor(k, target):
     return ampl
 
 
-def calculate_number(signfunction, maskfunction, magnitude_block, sign_bit):
+def get_float_from_bits(signfunction, maskfunction, magnitude_block, sign_bit):
     """
     returns the flaot value of the kernel
     """
@@ -133,7 +133,7 @@ def calculate_number(signfunction, maskfunction, magnitude_block, sign_bit):
     return kernel
 
 
-def get_weight_types(k):
+def get_sparsity(k):
     """
     returns the number of negative, zero and positive weights
     """
