@@ -4,16 +4,18 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.functional as F
 
+# keep the device info, cuda for gpu use
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class to_bit(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x):
         ctx.save_for_backward(x)
-        return torch.sign(nn.ReLU()(x))
+        return torch.sign(nn.ReLU()(x)) # ReLU return 0 if neg and x if not, sign returns 0 if 0 and 1 if pos
 
     @staticmethod
-    def backward(ctx, grad_output):
+    def backward(ctx, grad_output): # custom grad identity function of the threshold
         x, = ctx.saved_tensors
         return grad_output
 
@@ -22,10 +24,10 @@ class to_sign(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x):
         ctx.save_for_backward(x)
-        return (-1) ** torch.sign(nn.ReLU()(x))
+        return (-1) ** torch.sign(nn.ReLU()(x)) # returns 1 if 0 ( positif ) -1 if 0 ( negatif )
 
     @staticmethod
-    def backward(ctx, grad_output):
+    def backward(ctx, grad_output): # custom grad identity function of the threshold
         x, = ctx.saved_tensors
         return -grad_output
 
@@ -33,14 +35,14 @@ class to_sign(torch.autograd.Function):
 def init_weight_bits(shape):
     a = np.sqrt(2 / np.prod(shape[:-1]))  # He standard deviation
     nbits = shape[0]
-    probs = a * np.random.normal(0, 1, shape)
+    probs = a * np.random.normal(0, 1, shape)   # get bit distribution
 
     # check exactly zero initialization ( proba <= 0 )
     # linear
     if len(shape) == 3:
         for i in range(shape[1]):
             for j in range(shape[2]):
-                while np.all(probs[:-1, i, j] <= 0):
+                while np.all(probs[:-1, i, j] <= 0): # if all bits are 0 re calculate
                     probs[:-1, i, j] = a * np.random.normal(0, 1, nbits - 1)
 
     # conv
@@ -49,7 +51,7 @@ def init_weight_bits(shape):
             for out_channels in range(shape[4]):
                 for i in range(shape[1]):
                     for j in range(shape[2]):
-                        while np.all(probs[:-1, i, j, in_channels, out_channels] <= 0):
+                        while np.all(probs[:-1, i, j, in_channels, out_channels] <= 0): # if all bits are 0 re calculate
                             probs[:-1, i, j, in_channels, out_channels] = a * np.random.normal(0, 1, nbits - 1)
 
     return probs
@@ -83,16 +85,18 @@ def calc_scaling_factor(k, target):
     return ampl
 
 
-def calculate_number(signfunction, maskfunction, magnitude_block, sign_slice):
+def calculate_number(signfunction, maskfunction, magnitude_block, sign_bit):
+    """
+    returns the flaot value of the kernel
+    """
     if len(magnitude_block) == 0:
         magnitude = 1
     else:
-
         magnitude = 0
-        for i in range(len(magnitude_block)):
+        for i in range(len(magnitude_block)):   # for each magniture block we calculate the base 10 representation and sum them up
             magnitude += maskfunction.apply(magnitude_block[i]) * (2 ** i)
     # make kernel
-    kernel = signfunction.apply(sign_slice) * magnitude
+    kernel = signfunction.apply(sign_bit) * magnitude # dont forget to multiply by the sign
     return kernel
 
 
@@ -108,14 +112,18 @@ def get_weight_types(k):
 
 
 def getNZP(net):
+
+    """
+    returns the number of negative, zero and positive of a network net
+    """
     nsum = 0
     zsum = 0
     psum = 0
 
-    for l in net.modules():
+    for l in net.modules(): # for each module
 
-        if isinstance(l, Conv2dBit) or isinstance(l, LinearBit):
-            neg, zero, pos = l.get_nzp()
+        if isinstance(l, Conv2dBit) or isinstance(l, LinearBit): # if its an instance of Conv2Bit or Linear Bit
+            neg, zero, pos = l.get_nzp()    # get its nzp
             nsum += neg
             zsum += zero
             psum += pos

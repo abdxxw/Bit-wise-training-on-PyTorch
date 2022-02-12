@@ -34,7 +34,7 @@ class LinearBit(nn.Module):
 
         if self.default == False:   # in this case we use bitwise weights
 
-            if self.wbits > 1:
+            if self.nbBits > 1:
                 bit_weights = init_weight_bits(w_bit_shape)   # define the bit weights
             else:
                 raise ValueError("number of bits must be greater than 1")
@@ -102,9 +102,10 @@ class Conv2dBit(nn.Module):
         k_shape = list((self.kernel_size, self.kernel_size)) + [self.input_dim, self.filters]   # kernel shape
 
         k_bit_shape = [self.nbBits]
-        k_bit_shape.extend(k_bit)
+        k_bit_shape.extend(k_shape)
+        k_bit_shape.extend(k_shape)
 
-        print("Building Layer", self.name, krnl_shape)
+        print("Building Layer", self.name, k_shape)
 
 
         self.desired_std = np.sqrt(2 / np.prod(k_shape[:-1])) # He standard deviation
@@ -113,8 +114,8 @@ class Conv2dBit(nn.Module):
 
         if self.default == False:   # in this case we use bitwise weights
 
-            if self.wbits > 1:
-                bit_kernel = init_weight_bits(w_bit_shape)   # define the bit kernel
+            if self.nbBits > 1:
+                bit_kernel = init_weight_bits(k_bit_shape)   # define the bit kernel
             else:
                 raise ValueError("number of bits must be greater than 1")
 
