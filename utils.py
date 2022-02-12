@@ -8,6 +8,39 @@ import torch.nn.functional as F
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
+def to_device(data, device):
+    """Move tensor(s) to chosen device"""
+    if isinstance(data, (list, tuple)):
+        return [to_device(x, device) for x in data]
+    return data.to(device, non_blocking=True)
+
+
+
+@torch.no_grad()
+def evaluate(model, val_loader):
+    '''
+    evaluate a model on val_loader data
+    '''
+    model.eval()
+    outputs = [model.validation_step(batch) for batch in val_loader]
+    return model.validation_epoch_end(outputs)
+
+
+def get_lr(optimizer):
+    '''
+    return current learning rate of an optimizer
+    '''
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
+
+def accuracy(outputs, labels):
+    '''
+    simple function to calculate accuracy
+    '''
+    _, preds = torch.max(outputs, dim=1)
+    return torch.tensor(torch.sum(preds == labels).item() / len(preds))
+
+
 class to_bit(torch.autograd.Function):
     @staticmethod
     def forward(ctx, x):
@@ -61,7 +94,7 @@ def calc_scaling_factor(k, target):
     current_std = np.std(k)
 
     if current_std == 0:
-        print("something's wrong, the standard deviation is zero!")
+        print("standard deviation can' be zero")
         return 1
 
     ampl = 1
