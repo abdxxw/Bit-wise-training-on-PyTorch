@@ -131,7 +131,7 @@ class Conv2dBit(nn.Module):
 
         else:
             # in case of default layer we use only kernel ( no bias ) with he kaiming init
-            self.kernel = nn.Parameter(torch.randn(krnl_shape))
+            self.kernel = nn.Parameter(torch.randn(k_shape))
             nn.init.kaiming_normal_(self.kernel, mode='fan_in')
 
     def forward(self, x):
