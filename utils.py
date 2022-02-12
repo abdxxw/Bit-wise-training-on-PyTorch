@@ -1,4 +1,10 @@
 
+import torch
+import torch.nn as nn
+import numpy as np
+import torch.nn.functional as F
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class to_bit(torch.autograd.Function):
     @staticmethod
@@ -24,29 +30,29 @@ class to_sign(torch.autograd.Function):
         return -grad_output
 
 
-
-def predefine_nonzeroweight_bittensor(shape):
-    nlp = np.prod(shape[:-1])
-    a = np.sqrt(2 / nlp)
+def init_weight_bits(shape):
+    a = np.sqrt(2 / np.prod(shape[:-1]))  # He standard deviation
     nbits = shape[0]
-    distribution = a * np.random.normal(0, 1, shape)
-    # mlp here
+    probs = a * np.random.normal(0, 1, shape)
+
+    # check exactly zero initialization ( proba <= 0 )
+    # linear
     if len(shape) == 3:
         for i in range(shape[1]):
             for j in range(shape[2]):
-                while np.all(distribution[:-1, i, j] <= 0):
-                    distribution[:-1, i, j] = a * np.random.normal(0, 1, nbits - 1)
+                while np.all(probs[:-1, i, j] <= 0):
+                    probs[:-1, i, j] = a * np.random.normal(0, 1, nbits - 1)
 
-    # kernel here
+    # conv
     if len(shape) == 5:
         for in_channels in range(shape[3]):
             for out_channels in range(shape[4]):
                 for i in range(shape[1]):
                     for j in range(shape[2]):
-                        while np.all(distribution[:-1, i, j, in_channels, out_channels] <= 0):
-                            distribution[:-1, i, j, in_channels, out_channels] = a * np.random.normal(0, 1, nbits - 1)
+                        while np.all(probs[:-1, i, j, in_channels, out_channels] <= 0):
+                            probs[:-1, i, j, in_channels, out_channels] = a * np.random.normal(0, 1, nbits - 1)
 
-    return distribution
+    return probs
 
 
 def calc_scaling_factor(k, target):
