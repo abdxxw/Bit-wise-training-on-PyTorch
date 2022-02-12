@@ -371,7 +371,7 @@ class EfficientNet(ImageClassificationBase):
                                stride=1,
                                padding=1, config=config)
         self.bn1 = nn.BatchNorm2d(32)
-        self.layers = self._make_layers(in_channels=32,config)
+        self.layers = self._make_layers(in_channels=32,config=config)
         self.linear = LinearBit(cfg['out_channels'][-1], num_classes, config=config)
 
     def _make_layers(self, in_channels,config):

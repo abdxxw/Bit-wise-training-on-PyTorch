@@ -161,9 +161,14 @@ def train_bit_list(config,nbits,model_type="LeNet", configs=None):
         configs = list(map(list, itertools.product([0, 1], repeat=nbits)))[1:]
     nbits = len(configs[0])
     acc = []
+    if config["path"] == None:
+        path = ""
+    else:
+        path = config["path"]
+
     for trainableBits in configs:
 
-        save_path = path + "/"+model_type+"/{}_bits/{}".format(nbits, trainableBits)
+        save_path =  path + "/"+model_type+"/{}_bits/{}".format(nbits, trainableBits)
         os.makedirs(save_path, exist_ok=True)
 
         config["trainable_bits"] = trainableBits
@@ -175,14 +180,19 @@ def train_bit_list(config,nbits,model_type="LeNet", configs=None):
 
         if model_type == 'LeNet':
             model = to_device(LeNet(config), device)
+            data_loader, data_loader_test = get_dataset("MNIST")
         elif model_type ==  'ResNet':
             model = to_device(resnet20(config), device)
+            data_loader, data_loader_test = get_dataset("CIFAR10")
         elif model_type == "Conv6":
             model = to_device(Conv6(config), device)
+            data_loader, data_loader_test = get_dataset("CIFAR10")
         elif model_type == "VGG":
-            model = to_device(VGG(config), device)
+            model = to_device(VGG("VGG11",config), device)
+            data_loader, data_loader_test = get_dataset("CIFAR10")
         elif model_type == "EfficientNet":
             model = to_device(EfficientNetB0(config), device)
+            data_loader, data_loader_test = get_dataset("CIFAR10")
         else:
             raise ValueError("only valid options are LeNet, ResNet, Conv6, VGG, EfficientNet")
         print("Traning for {} config : ".format(trainableBits))
@@ -297,7 +307,7 @@ def VGG_train(config=None):
         }
 
     data_loader, data_loader_test = get_dataset("CIFAR10")
-    model = to_device(VGG(config), device)
+    model = to_device(VGG("VGG11",config), device)
     history = []
     history += fit_net(model, data_loader, data_loader_test,config)
 
