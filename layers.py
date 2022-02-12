@@ -103,12 +103,11 @@ class Conv2dBit(nn.Module):
 
         k_bit_shape = [self.nbBits]
         k_bit_shape.extend(k_shape)
-        k_bit_shape.extend(k_shape)
 
         print("Building Layer", self.name, k_shape)
 
 
-        self.desired_std = np.sqrt(2 / np.prod(k_shape[:-1])) # He standard deviation
+        self.std = np.sqrt(2 / np.prod(k_shape[:-1])) # He standard deviation
         signbit = self.inference_sequence[1]
         magnitudebits = range(self.inference_sequence[0], self.inference_sequence[1])
 
@@ -140,7 +139,7 @@ class Conv2dBit(nn.Module):
 
     def get_kernel(self):
         if self.default:
-            return self.weight
+            return self.kernel
         else:
             # at each call we calculate the kernel value from the bit weights
             self.kernel = calculate_number(self.tosign, self.tobit, self.magnitude_block, self.sign_bit)

@@ -1,6 +1,8 @@
 
 from models import *
 import copy
+import torchvision.datasets as ds
+import torchvision.transforms as transforms
 
 class DeviceDataLoader():
     """Wrap a dataloader to move data to a device"""
@@ -35,7 +37,7 @@ def get_dataset(type="MNIST", batch_size=64):
     train_tfms = transforms.Compose(train_tf)
     test_tfms = transforms.Compose(test_tf)
 
-    if type == "MNIST"
+    if type == "MNIST":
         train = ds.MNIST(root='MNIST/',
                                train=True,
                                transform=train_tfms,
@@ -75,28 +77,27 @@ def get_dataset(type="MNIST", batch_size=64):
 
 
 
-def fit_net(model, train_loader, val_loader, config):
+def fit_net(model, train_loader, val_loader, config,grad_clip=None):
     '''
     training function according to config
     '''
     torch.cuda.empty_cache()
     history = []
 
-    match config["optimizer"]:
-        case 'Adam':
-            optimizer = torch.optim.Adam(model.parameters(),lr=config["max_lr"])
-        case 'SGD':
-            optimizer = torch.optim.SGD(model.parameters(),lr=config["max_lr"],momentum=0.9)
-        case _:
-            raise ValueError("only valid options are Adam and SGD")
+    if config["optimizer"] == "Adam":
+        optimizer = torch.optim.Adam(model.parameters(),lr=config["max_lr"])
+    elif config["optimizer"] =='SGD':
+        optimizer = torch.optim.SGD(model.parameters(),lr=config["max_lr"],momentum=0.9)
+    else:
+        raise ValueError("only valid options are Adam and SGD")
 
 
-        sched = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=config["milestones"], gamma=0.1)
+    sched = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=config["milestones"], gamma=0.1)
 
-        # other schedulars if you want to expirement
-        # sched = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr, epochs=epochs, steps_per_epoch=len(train_loader))
-        # sched = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
-        # sched = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.1, patience=5)
+    # other schedulars if you want to expirement
+    # sched = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr, epochs=epochs, steps_per_epoch=len(train_loader))
+    # sched = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
+    # sched = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor = 0.1, patience=5)
 
     # check for saved checkpoints ( has to be entered manually with saved = (last epoch, saved weights)
     if config["saved"] == None:
@@ -107,7 +108,7 @@ def fit_net(model, train_loader, val_loader, config):
 
     best = 0
 
-    for epoch in range(start, epochs):
+    for epoch in range(start, config["epochs"]):
         # Training Phase 
         model.train()
         train_losses = []
@@ -136,16 +137,16 @@ def fit_net(model, train_loader, val_loader, config):
         model.epoch_end(epoch, result)
         history.append(result)
         # for each epoch save model if path exists
-        if path != None:
+        if config["path"] != None:
             torch.save(model.state_dict(),
-                       path + "/current_epoch_" + str(epoch) + "_" + str(history[-1]['val_acc']) + ".pth")
+                       config["path"] + "/current_epoch_" + str(epoch) + "_" + str(history[-1]['val_acc']) + ".pth")
         # keep track of best model
         if history[-1]['val_acc'] > best:
             best = history[-1]['val_acc']
             best_epoch = epoch
             best_model = copy.deepcopy(model)
-    if path != None:
-        torch.save(best_model.state_dict(), path + "/best_epoch_" + str(best_epoch) + "_" + str(best) + ".pth")
+    if config["path"] != None:
+        torch.save(best_model.state_dict(), config["path"] + "/best_epoch_" + str(best_epoch) + "_" + str(best) + ".pth")
 
     return history
 
@@ -154,7 +155,7 @@ import itertools
 import os
 
 
-def train_bit_list(model_type="LeNet",config,nbits, configs=None):
+def train_bit_list(config,nbits,model_type="LeNet", configs=None):
     # in case no list is specified we take all the combinition ( Note that would be heavy on the hardware )
     if configs == None:
         configs = list(map(list, itertools.product([0, 1], repeat=nbits)))[1:]
@@ -172,13 +173,12 @@ def train_bit_list(model_type="LeNet",config,nbits, configs=None):
 
 
 
-        match model_type:
-            case 'LeNet':
-                model = to_device(LeNet(config), device)
-            case 'ResNet':
-                model = to_device(resnet20(config), device)
-            case _:
-                raise ValueError("only valid options are LeNet and ResNet")
+        if model_type == 'LeNet':
+            model = to_device(LeNet(config), device)
+        elif model_type ==  'ResNet':
+            model = to_device(resnet20(config), device)
+        else:
+            raise ValueError("only valid options are LeNet and ResNet")
         print("Traning for {} config : ".format(trainableBits))
 
         history = []
@@ -188,7 +188,7 @@ def train_bit_list(model_type="LeNet",config,nbits, configs=None):
     return configs, acc
 
 
-def LeNet(config=None):
+def LeNet_train(config=None):
 
     nbits = 2
     trainableBits = [0, 1]
@@ -200,7 +200,7 @@ def LeNet(config=None):
             "default": False,  # is this is true then it trains in the standard way, using default float32 weights
             "nbBits": len(trainableBits),  # bit-depth used for weights
             "trainable_bits": trainableBits,  # specify which bits are trainable, kind related to the previous
-            "inference_sequence": [0, nbits - 1]  # this allows us to choose which bits participate in the calculation
+            "inference_sequence": [0, nbits - 1],  # this allows us to choose which bits participate in the calculation
             "epochs": 30,  # number of epochs
             "max_lr": 0.006,  # , learning rate
             "optimizer": "Adam",  # type of optimizer
@@ -217,4 +217,4 @@ def LeNet(config=None):
 
 
 if __name__ == '__main__':
-    LeNet()
+    LeNet_train()
